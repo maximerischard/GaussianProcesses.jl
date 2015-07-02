@@ -1,67 +1,72 @@
 #Laplace approximation for the Gaussian process posterior.
 
+function laplace!(gp::GP)
 
-function laplace(gp::GP x::Matrix{Float64}, y::Vector{Float64})
-
-dim, nobsv = size(x,1);
     m = meanf(gp.m,gp.x)                          #Evaluate the mean function
     k = crossKern(gp.x,gp.k)                      #Evaluate the kernel
-    lik = likf()                                  #Evaluate the likelihood function
 
-  alpha = zeros(nobsv,1);                      #Starting value for α, NEEDS TO BE CHECKED
+  alpha = zeros(gp.nobsv,1)                         #Starting value for α, NEEDS TO BE CHECKED
 
-alpha = irls(alpha, m,K,lik);        #NEED TO CREATE OPTIMIZATION FUNCTION TO MAXIMISE PHI, REQUIRE 1ST AND 2ND DERIVATIVES OF PHI
+function psi(alpha::Vector{Float64},m::Vector{Float64},k::Matrix{Float64},lik::Likelihood)             #Psi = negative log-posterior as defined in Rasmussen and Williams (2006) p.42
+  f = k*alpha+m;
+  lp = like(gp.lik,gp.y,f)
+  psi = alpha'*(f-m)/2 - sum(lp) #up to a normalising constant
+    return psi           
+end
 
+#1st derivative of Psi    
+function dPsi!(alpha::Vector{Float64},m::Vector{Float64},k::Matrix{Float64},lik::Likelihood)
+      dlp = grad1_likef(gp.lik,gp.y,f) 
+      dpsi = k*(alpha-dlp)
+      return dpsi
+end
+
+#2nd derivative of Psi
+function d2Psi!(alpha,m,k,likf)
+      d2lp = grad2_likef(gp.lik,gp.y,f)
+      dpsi2 = -diag(d2lp) - inv(PDMat(k))
+      return dpsi2
+end
+
+func = TwiceDifferentiableFunction(psi,dPsi!,d2Psi!)
+
+res = optimize(func, alpha, method = :newton)   #NEED TO CREATE OPTIMIZATION FUNCTION TO MAXIMISE PHI, REQUIRE 1ST AND 2ND DERIVATIVES OF PHI
+
+alpha = res.minimum    
 
 #Calculate the posterior    
-f = K*alpha+m;                                  # compute latent function values
-[lp,dlp,d2lp,d3lp] = likf(f); W = -d2lp; 
+f = k*alpha+m;                                  # compute latent function values
+lp = like(gp.lik,gp.y,f); W = -grad2_likef(gp.lik,gp.y,f); 
 sW = sqrt(abs(W));
 
-L = PDMat(eye(nobsv)+sW*sW'.*k);                 
-nlZ = alpha'*(f-m)/2 + sum(log(diag(L))-lp);   # ..(f-m)/2 -lp +ln|B|/2 negative log-likelihood
+L = PDMat(eye(gp.nobsv)+sW*sW'.*k);                 
+gp.mLL = alpha'*(f-m)/2 + sum(log(diag(L))-lp);   # ..(f-m)/2 -lp +ln|B|/2 negative marginal log-likelihood
 
-#Calculate the derivatives
-  dnlZ = hyp;                                   # allocate space for derivatives
-    Z = repmat(sW,1,nobsv).*solve_chol(post.L,diag(sW)); #sW*inv(B)*sW=inv(K+inv(W))
-    C = post.L'\(repmat(sW,1,nobsv).*K);                     # deriv. of ln|B| wrt W
-    g = (diag(K)-sum(C.^2,1)')/2;                    # g = diag(inv(inv(K)+W))/2
+## #Calculate the derivatives of the marginal log-likelihood wrt to the hyperparameters (see Rasmussen and Williams (2006) p. 125)
+##     Z = sW.*L\diag(sW); #sW*inv(B)*sW=inv(K+inv(W))
+##     C = L\(sW.*k);                     # deriv. of ln|B| wrt W
+##     g = (diag(k)-sum(C.^2,1)')/2;                    # g = diag(inv(inv(K)+W))/2
 
-  dfhat = g.*d3lp;  # deriv. of nlZ wrt. fhat: dfhat=diag(inv(inv(K)+W)).*d3lp/2
-    
-  for i=1:length(hyp.cov)                                    # covariance hypers
-    dK = feval(cov{:}, hyp.cov, x, [], i);
-    dnlZ.cov(i) = sum(sum(Z.*dK))/2 - alpha'*dK*alpha/2;         # explicit part
-    b = dK*dlp;                            # b-K*(Z*b) = inv(eye(nobsv)+K*diag(W))*b
-    dnlZ.cov(i) = dnlZ.cov(i) - dfhat'*( b-K*(Z*b) );            # implicit part
-  end
-    
-  for i=1:length(hyp.lik)                                    # likelihood hypers
-    [lp_dhyp,dlp_dhyp,d2lp_dhyp] = feval(lik{:},hyp.lik,y,f,[],inf,i);
-    dnlZ.lik(i) = -g'*d2lp_dhyp - sum(lp_dhyp);                  # explicit part
-    b = K*dlp_dhyp;                        # b-K*(Z*b) = inv(eye(nobsv)+K*diag(W))*b
-    dnlZ.lik(i) = dnlZ.lik(i) - dfhat'*( b-K*(Z*b) );            # implicit part
-  end
-    
-  for i=1:length(hyp.mean)                                         # mean hypers
-    dm = feval(mean{:}, hyp.mean, x, i);
-    dnlZ.mean(i) = -alpha'*dm;                                   # explicit part
-    dnlZ.mean(i) = dnlZ.mean(i) - dfhat'*(dm-K*(Z*dm));          # implicit part
-  end
+##   dfhat = g.*grad3_likef(gp.lik,gp.y,f);  # deriv. of mLL wrt. fhat: dfhat=diag(inv(inv(K)+W)).*d3lp/2
 
+##   # Mean function hyperparameters
+##     if mean
+##         Mgrads = grad_stack(gp.x, gp.m)                              # [dM/dθᵢ]    
+##         for i in 1:num_params(gp.m)
+##             gp.dmLL[i] = -alpha'*Mgrads[:,i] - dfhat'*(Mgrads[:,i]-k*(Z*Mgrads[:,i]));         
+##         end
+##     end
 
-# Evaluate criterion Psi(alpha) = alpha'*K*alpha + likfun(f), where 
-# f = K*alpha+m, and likfun(f) = feval(lik{:},hyp.lik,y,  f,  [],inf).
-    
-function Psi(alpha,m,K,likfun)
-  f = K*alpha+m;
-  [lp,dlp,d2lp] = likfun(f); W = -d2lp;
-  psi = alpha'*(f-m)/2 - sum(lp);
-  dpsi = K*(alpha-dlp);
-    out = [psi,dpsi,f,alpha,dlp,W]
-    return out
+##   # Kernel hyperparameters
+##     if kern
+##         Kgrads = grad_stack(gp.x, gp.k)                              # [dK/dθᵢ]    
+##         for i in 1:num_params(gp.k)
+##             b = Kgrads[:,:,i]*dlp;       # b-K*(Z*b) = inv(eye(nobsv)+K*diag(W))*b
+##             gp.dmLL[i+mean*num_params(gp.m)] = sum(sum(Z.*Kgrads[:,:,i]))/2-alpha'*Kgrads[:,:,i]*alpha/2-dfhat'*(b-k*(Z*b));  
+##         end
+##    end
 end
 
 
 
-end
+

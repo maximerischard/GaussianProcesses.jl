@@ -16,3 +16,4 @@ gp = GP(x,y,mZero,kern)
 optimize!(gp; kern=false, show_trace=true, method=:bfgs)
 
 
+
