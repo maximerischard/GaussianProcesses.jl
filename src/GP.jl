@@ -34,14 +34,6 @@ type GP
         update_mll!(gp)
         return gp
    end
-    
-   function GP(x::Matrix{Float64}, y::Vector{Float64}, m::Mean, k::Kernel,lik::Likelihood)
-        dim, nobsv = size(x)
-        length(y) == nobsv || throw(ArgumentError("Input and output observations must have consistent dimensions."))
-        gp = new(x, y, dim, nobsv, m, k, lik)
-        laplace!(gp)
-        return gp
-   end
 end
 
 # Creates GP object for 1D case
