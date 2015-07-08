@@ -117,7 +117,6 @@ function show(io::IO, gp::logisticGP)
     show(io, gp.x)
     print(io,"\n  Output observations = ")
     show(io, gp.y)
-    print(io,"\n  Variance of observation noise = $(exp(gp.logNoise))")
     print(io,"\n  Marginal Log-Likelihood = ")
     show(io, round(gp.mLL,3))
 end

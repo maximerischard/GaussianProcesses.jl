@@ -15,5 +15,3 @@ kern = SE(0.0,0.0)
 gp = GP(x,y,mZero,kern)
 optimize!(gp; kern=false, show_trace=true, method=:bfgs)
 
-
-
