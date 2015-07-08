@@ -8,7 +8,7 @@ VERSION < v"0.4-" && using Docile
 # Functions that should be available to package
 # users should be explicitly exported here
 
-export GP, logisticGP, predict, SumKernel, ProdKernel, Noise, Kernel, SE, SEIso, SEArd, Periodic, Poly, RQ, RQIso, RQArd, Lin, LinIso, LinArd, Mat, Mat12Iso, Mat12Ard, Mat32Iso, Mat32Ard, Mat52Iso, Mat52Ard, MeanZero, MeanConst, MeanLin, MeanPoly, SumMean, ProdMean, optimize!, laplace!, Logistic
+export GP, logisticGP, predict, SumKernel, ProdKernel, Noise, Kernel, SE, SEIso, SEArd, Periodic, Poly, RQ, RQIso, RQArd, Lin, LinIso, LinArd, Mat, Mat12Iso, Mat12Ard, Mat32Iso, Mat32Ard, Mat52Iso, Mat52Ard, MeanZero, MeanConst, MeanLin, MeanPoly, SumMean, ProdMean, optimize!, laplace!, update_laplace_and_dmll!, Logistic, logisticOptimize!
 
 # all package code should be included here
 include("means/meanFunctions.jl")
@@ -19,6 +19,7 @@ include("GP.jl")
 include("logisticGP.jl")
 include("inference/laplace.jl")
 include("optimize.jl")
+include("logisticOptimize.jl")
 
 # This approach to loading supported plotting packages is taken directly from the "KernelDensity" package
 macro glue(pkg)

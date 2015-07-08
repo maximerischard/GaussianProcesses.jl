@@ -90,18 +90,16 @@ end
 ## end
 
 
-function get_params(gp::logisticGP; noise::Bool=true, mean::Bool=true, kern::Bool=true)
+function get_params(gp::logisticGP; mean::Bool=true, kern::Bool=true)
     params = Float64[]
-    if noise; push!(params, gp.logNoise); end
     if mean;  append!(params, get_params(gp.m)); end
     if kern; append!(params, get_params(gp.k)); end
     return params
 end
 
-function set_params!(gp::logisticGP, hyp::Vector{Float64}; noise::Bool=true, mean::Bool=true, kern::Bool=true)
+function set_params!(gp::logisticGP, hyp::Vector{Float64}; mean::Bool=true, kern::Bool=true)
     # println("mean=$(mean)")
-    if noise; gp.logNoise = hyp[1]; end
-    if mean; set_params!(gp.m, hyp[1+noise:noise+num_params(gp.m)]); end
+    if mean; set_params!(gp.m, hyp[1:num_params(gp.m)]); end
     if kern; set_params!(gp.k, hyp[end-num_params(gp.k)+1:end]); end
 end
 
