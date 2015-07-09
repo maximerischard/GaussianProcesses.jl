@@ -24,6 +24,6 @@ function grad3_likef(y::Vector{Float64},f::Vector{Float64})
         s   = min(0,f); 
         p   = exp(s)./(exp(s)+exp(s-f));                    
         d2lp_df2 = -exp(2*s-f)./(exp(s)+exp(s-f)).^2; # 2nd derivative of log likelihood
-        d3lp_df3 = 2*d2lp.*(0.5-p);                   # 3rd derivative of log likelihood
+        d3lp_df3 = 2*d2lp_df2.*(0.5-p);                   # 3rd derivative of log likelihood
         return d3lp_df3
 end
