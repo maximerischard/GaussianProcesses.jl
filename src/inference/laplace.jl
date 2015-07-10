@@ -18,7 +18,7 @@ function laplace!(gp::logisticGP)
     function dPsi!(alpha::Vector{Float64}, grad::Vector{Float64})
         f = k*alpha+m;
         dlp = grad1_likef(gp.y,f) 
-      #  dpsi = k*(alpha-dlp)
+      #  dpsi = k*(dlp-alpha)
         dpsi = dlp - alpha
         grad[:] = -dpsi
     end
@@ -33,9 +33,7 @@ function laplace!(gp::logisticGP)
 
 #func = TwiceDifferentiableFunction(psi,dPsi!,d2Psi!)
     #res = optimize(psi, dPsi!, gp.alpha,show_trace=true)
-    res = optimize(psi, dPsi!, d2Psi!, gp.alpha, show_trace=true, method=:newton)
-    #res = optimize(psi, alpha; method = :nelder_mead)   #NEED TO CREATE OPTIMIZATION FUNCTION TO MAXIMISE PHI, REQUIRE 1ST AND 2ND DERIVATIVES OF PHI
-
+    res = optimize(psi, dPsi!, d2Psi!, gp.alpha, method=:newton)
         
     gp.alpha = res.minimum  
 
@@ -56,7 +54,7 @@ function update_laplace_and_dmll!(gp::logisticGP,mean::Bool=true, kern::Bool=tru
     k = crossKern(gp.x,gp.k)                  # Evaluate the kernel
     
     f = k*gp.alpha+m;                                  # compute latent function values
-    lp = like(gp.y,f); W = -grad2_likef(gp.y,f); 
+    lp = like(gp.y,f); W = -grad2_likef(gp.y,f);
     sW = sqrt(abs(W)).*(W./abs(W));                   #Use W./abs(W) to preserve the sign
 
     L = PDMat(eye(gp.nobsv)+sW*sW'.*k);
