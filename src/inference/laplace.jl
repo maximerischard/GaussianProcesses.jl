@@ -27,7 +27,7 @@ function laplace!(gp::logisticGP)
     function d2Psi!(alpha::Vector{Float64}, hess::Matrix{Float64})
         f = k*alpha+m;
         d2lp = grad2_likef(gp.y,f)
-        dpsi2 = diagm(d2lp) - inv(k)
+        dpsi2 = diagm(d2lp) - k\eye(gp.nobsv)
         hess[:,:] = -dpsi2
     end
 
