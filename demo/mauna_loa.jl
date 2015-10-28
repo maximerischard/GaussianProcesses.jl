@@ -7,9 +7,9 @@ using Gadfly, GaussianProcesses
 
 data = readcsv("CO2_data.csv")
 
-year = data[:,1]; co2 = data[:,2]
-x = year[year.<2004]; y = co2[year.<2004]
-xpred = year[year.>=2004]; ypred = co2[year.>=2004]
+year = data[:,1]; co2 = data[:,2];
+x = year[year.<2004]; y = co2[year.<2004];
+xpred = year[year.>=2004]; ypred = co2[year.>=2004];
 
 mConst = MeanConst(mean(y))       #Fit the constant mean function
 

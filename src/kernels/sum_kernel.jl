@@ -38,6 +38,23 @@ end
 ##     return s
 ## end
 
+## function add_matrices!(X::AbstractMatrix, Y::AbstractMatrix)
+##     m,n = size(X)
+##     for i in 1:m, j in 1:n
+##         X[i,j] += Y[i,j]
+##     end
+## end
+
+function crossKern(X::Matrix{Float64}, sumkern::SumKernel)
+    d, nobsv = size(X)
+    s = zeros(nobsv, nobsv)
+    for k in sumkern.kerns
+        #add_matrices!(s, crossKern(X,k))
+        s[:,:] = s + crossKern(X,k)
+    end
+    return s
+end
+    
 function get_params(sumkern::SumKernel)
     p = Array(Float64, 0)
     for k in sumkern.kerns
@@ -72,6 +89,16 @@ function grad_kern(sumkern::SumKernel, x::Vector{Float64}, y::Vector{Float64})
     dk
 end
 
+function grad_stack!(stack::AbstractArray, X::Matrix{Float64}, sumkern::SumKernel)
+    s = 1
+    for kern in sumkern.kerns
+        np = num_params(kern)
+        grad_stack!(view(stack,:, :, s:(s+np-1)), X, kern)
+        s += np
+    end
+    return stack
+end
+        
 # Addition operators
 function +(k1::SumKernel, k2::Kernel)
     kerns = [k1.kerns, k2]

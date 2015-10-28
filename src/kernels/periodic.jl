@@ -45,35 +45,35 @@ function grad_kern(peri::Periodic, x::Vector{Float64}, y::Vector{Float64})
     return dK_theta
 end
 
-# This makes crossKern slower for some reason...
+function crossKern(X::Matrix{Float64}, peri::Periodic)
+    d, nobsv = size(X)
+    ℓ2 = exp(2.0*peri.ll)
+    σ2 = exp(2.0*peri.lσ)
+    p = exp(peri.lp)
+    R = pairwise(Euclidean(), X)
+    for i in 1:1:nobsv, j in 1:i
+        @inbounds R[i,j] =  σ2*exp(-2.0/ℓ2*sin(π*R[i,j]/p)^2)
+        @inbounds R[j,i] = R[i,j]
+    end
+    return R
+end
 
-## function crossKern(X::Matrix{Float64}, peri::Periodic)
-##     ℓ2 = exp(2.0*peri.ll)
-##     σ2 = exp(2.0*peri.lσ)
-##     p = exp(peri.lp)
-
-##     R = pairwise(Euclidean(), X)
-##     broadcast!(*, R, R, π/p)
-##     map!(sin, R, R)
-##     broadcast!(^, R, R, 2)
-##     broadcast!(*, R, R, -2.0/ℓ2)
-##     ## R^=2
-##     ## R *= (-2.0/ℓ2)
-##     map!(exp, R, R)
-##     R *= σ2
-##
-
-function grad_stack(X::Matrix{Float64}, peri::Periodic)
+function grad_stack!(stack::AbstractArray, X::Matrix{Float64}, peri::Periodic)
     d, nobsv = size(X)
     ℓ = exp(peri.ll)
     σ2 = exp(2*peri.lσ)
     p      = exp(peri.lp)
     dxy = pairwise(Euclidean(), X)
     
-    stack = Array(Float64, nobsv, nobsv, 3)
-    for i in 1:nobsv, j in 1:nobsv
+    for i in 1:nobsv, j in 1:i
         @inbounds stack[i,j,1] = 4.0*σ2*(sin(pi*dxy[i,j]/p)/ℓ)^2*exp(-2/ℓ^2*sin(pi*dxy[i,j]/p)^2)  # dK_dℓ
+        @inbounds stack[j,i,1] = stack[i,j,1]
+        
         @inbounds stack[i,j,2] = 2.0*σ2*exp(-2/ℓ^2*sin(pi*dxy[i,j]/p)^2)        # dK_dσ
+        @inbounds stack[j,i,2] = stack[i,j,2]
+        
         @inbounds stack[i,j,3] = 4.0/ℓ^2*σ2*(pi*dxy[i,j]/p)*sin(pi*dxy[i,j]/p)*cos(pi*dxy[i,j]/p)*exp(-2/ℓ^2*sin(pi*dxy[i,j]/p)^2)    # dK_dp
+        @inbounds stack[j,i,3] = stack[i,j,3]
     end
+    return stack
 end
