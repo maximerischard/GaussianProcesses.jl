@@ -25,7 +25,7 @@ MCMCout1 = mcmc(gp)
 #MALA sampler
 MCMCout2=mcmc(gp,start=[-1.0,0.0,0.0,0.0],
               sampler=MALA(0.3),
-              mcrange=BasicMCRange(nsteps=5000, burnin=1000))
+              mcrange=BasicMCRange(nsteps=5000, thinning=2,burnin=1000))
 
 
 #HMC sampler
@@ -33,6 +33,7 @@ MCMCout3=mcmc(gp,start=[-1.0,0.0,0.0,0.0],
               sampler=HMC(5,0.05),
               mcrange=BasicMCRange(nsteps=2000, burnin=1000))
 
+#Plot the marginal posterior for one of the parameters
 plot(layer(x=MCMCout1[3,:],Geom.density),
      layer(x=MCMCout2[3,:],Geom.density,Theme(default_color=colorant"red")),
      layer(x=MCMCout3[3,:],Geom.density,Theme(default_color=colorant"green")))

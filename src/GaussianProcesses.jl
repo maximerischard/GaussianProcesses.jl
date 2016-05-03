@@ -1,5 +1,5 @@
 module GaussianProcesses
-using Optim, PDMats, Distances, ArrayViews, Lora
+using Optim, PDMats, Distributions, Distances, ArrayViews, Lora
 VERSION < v"0.4-" && using Docile
 
 import Base: +, *

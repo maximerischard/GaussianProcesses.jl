@@ -11,27 +11,38 @@ A function for running a variety of MCMC algorithms for estimating the GP hyperp
 * `mean::Bool`: Mean function hyperparameters should be optmized
 * `kern::Bool`: Kernel function hyperparameters should be optmized
 """ ->
-function mcmc(gp::GP; start::Vector{Float64}=get_params(gp), sampler::Lora.MCSampler=Lora.MH(ones(length(GaussianProcesses.get_params(gp)))), mcrange::Lora.BasicMCRange=BasicMCRange(nsteps=5000, burnin=1000), noise::Bool=true, mean::Bool=true, kern::Bool=true)
+function mcmc(gp::GP;
+              start::Vector{Float64}=get_params(gp),
+              sampler::Lora.MCSampler=Lora.MH(ones(length(get_params(gp)))),
+              mcrange::Lora.BasicMCRange=BasicMCRange(nsteps=5000, burnin=1000),
+              noise::Bool=true, mean::Bool=true, kern::Bool=true)
+
+    #NEED TO ADD A WARNING IF LORA IS NOT LOADED
+    store = get_params(gp) #store original parameters
+    npara = length(store)  #number of parameters
+    
+    prior = Distributions.MvNormal(zeros(npara),100*eye(npara)) #default prior
     
     function mll(hyp::Vector{Float64})  #log-target
         set_params!(gp, hyp; noise=noise, mean=mean, kern=kern)
         update_mll!(gp)
-        return gp.mLL
+        return gp.mLL + logpdf(prior,hyp)
     end
     
     function dmll(hyp::Vector{Float64}) #gradient of the log-target
         set_params!(gp, hyp; noise=noise, mean=mean, kern=kern)
         update_mll_and_dmll!(gp; noise=noise, mean=mean, kern=kern)
-        return gp.dmLL
+        return gp.dmLL + sum(gradlogpdf(prior,hyp))
     end
     starting = Dict(:p=>start)
     q = BasicContMuvParameter(:p, logtarget=mll,gradlogtarget=dmll) 
     model = likelihood_model(q, false)                               #set-up the model
     tune = VanillaMCTuner(period=mcrange.burnin)                     #set length of tuning (default to burnin length)
     job = BasicMCJob(model, sampler, mcrange, starting,tuner=tune)   #set-up MCMC job
-    print(job)                                                       
+    print(job)                                                       #display MCMC set-up for the user
     run(job)
     chain = Lora.output(job)
+    set_params!(gp,store)      #reset the parameters stored in the GP to original values
     return chain.value
 end    
     
