@@ -20,13 +20,12 @@ gp = GP(x,y,mZero,kern,-1.0)      #Fit the GP, where -1.0 is the log Gaussian no
 #The default implementation uses the random-walk Metropolis algorithm and details can be found in the mcmc function documentation. Note that the parameters of the MCMC algorithm are automatically tuned.
 MCMCout1 = mcmc(gp)
 
-#The user can specify a different sampler from the Lora package as well as different starting values, number of iterations, length of burnin and the option to fix some of the parameters
+#The user can specify a different sampler from the Lora package as well as different starting values, number of iterations, length of burnin, etc.
 
 #MALA sampler
 MCMCout2=mcmc(gp,start=[-1.0,0.0,0.0,0.0],
               sampler=MALA(0.3),
               mcrange=BasicMCRange(nsteps=5000, thinning=2,burnin=1000))
-
 
 #HMC sampler
 MCMCout3=mcmc(gp,start=[-1.0,0.0,0.0,0.0],
@@ -37,3 +36,6 @@ MCMCout3=mcmc(gp,start=[-1.0,0.0,0.0,0.0],
 plot(layer(x=MCMCout1[3,:],Geom.density),
      layer(x=MCMCout2[3,:],Geom.density,Theme(default_color=colorant"red")),
      layer(x=MCMCout3[3,:],Geom.density,Theme(default_color=colorant"green")))
+
+
+
