@@ -13,7 +13,7 @@ function mcmc(gp::GP;
               sampler::Lora.MCSampler=Lora.MH(ones(length(get_params(gp)))),
               mcrange::Lora.BasicMCRange=BasicMCRange(nsteps=5000, burnin=1000))
 
-    #NEED TO ADD A WARNING IF LORA IS NOT LOADED
+
     store = get_params(gp) #store original parameters
     npara = length(store)  #number of parameters
     
