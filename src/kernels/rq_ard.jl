@@ -26,6 +26,7 @@ function set_params!(rq::RQArd, hyp::Vector{Float64})
 end
 
 get_params(rq::RQArd) = [log(rq.ℓ2)/2.0; log(rq.σ2)/2.0; log(rq.α)]
+get_param_names(rq::RQArd) = [get_param_names(rq.ℓ2, :ll); :lσ; :lα]
 num_params(rq::RQArd) = rq.dim
 
 metric(rq::RQArd) = WeightedSqEuclidean(1.0./(rq.ℓ2))
@@ -42,6 +43,6 @@ function grad_kern(rq::RQArd, x::Vector{Float64}, y::Vector{Float64})
     g2 = 2.0*rq.σ2*(1+0.5*dxy2/rq.α)^(-rq.α)
     
     part     = (1+0.5*dxy2/rq.α)
-    g3 = rq.σ2*part^(-rq.α)*(0.5*dxy2/part-rq.α*log(part))
+    g3 = rq.σ2*part^(-rq.α)*(0.5*dxy2/part-rq.α*log(part))*rq.α
     return [g1; g2; g3]
 end
