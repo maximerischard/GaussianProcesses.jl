@@ -26,7 +26,7 @@ get_params(mat::Mat12Ard) = [log(mat.ℓ); log(mat.σ2)/2.0]
 get_param_names(mat::Mat12Ard) = [get_param_names(mat.ℓ, :ll); :lσ]
 num_params(mat::Mat12Ard) = mat.dim
 
-metric(mat::Mat12Ard) = WeightedEuclidean(1.0./(mat.ℓ))
+metric(mat::Mat12Ard) = WeightedEuclidean(1.0./(mat.ℓ.^2))
 kern(mat::Mat12Ard, r::Float64) = mat.σ2*exp(-r)
 
 function grad_kern(mat::Mat12Ard, x::Vector{Float64}, y::Vector{Float64})
@@ -38,4 +38,18 @@ function grad_kern(mat::Mat12Ard, x::Vector{Float64}, y::Vector{Float64})
     g2 = 2.0*mat.σ2*exp_r
     
     return [g1; g2]
+end
+
+function grad_stack!(stack::AbstractArray, X::Matrix{Float64}, mat::Mat12Ard)
+    d = size(X,1)
+    R = distance(mat,X)
+    stack[:,:,d+1] = crossKern(X, mat)
+    ck = view(stack, :, :, d+1)
+    for i in 1:d
+        grad_ls = view(stack, :, :, i)
+        pairwise!(grad_ls, WeightedSqEuclidean([1.0/mat.ℓ[i]^2]), view(X, i, :))
+        map!(*, grad_ls, grad_ls, ck./R)
+    end
+    stack[:,:, d+1] = 2.0 * ck
+    return stack
 end
