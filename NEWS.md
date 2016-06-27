@@ -1,6 +1,10 @@
 # News
 
-## Version 0.1.5 (2016-06-02)
+## Version 0.2.1 (2016-06-06)
+* Added fit! function to fit a new set observations to existing GP object
+
+## Version 0.2.0 (2016-06-03)
+* Julia requirement moved up to v0.4
 * Support added for ScikitLearn
 * rand and rand! functions added to sample prior and posterior paths of Gaussian process
 * Major speed improvements for gradient calculations of stationary ARD kernels
