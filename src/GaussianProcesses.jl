@@ -4,7 +4,7 @@ using Optim, PDMats, Distributions, Distances, ArrayViews, Lora
 
 
 import Base: +, *
-import Base: rand, rand!
+import Base: rand, rand!, mean, cov
 
 # Functions that should be available to package
 # users should be explicitly exported here
@@ -31,7 +31,7 @@ macro glue(pkg)
 end
 
 @glue Gadfly
-@glue Winston
+@glue PyPlot
 # This does not require @glue because it uses the interface defined in
 # ScikitLearnBase, which is a skeleton package.
 include("glue/ScikitLearn.jl")
