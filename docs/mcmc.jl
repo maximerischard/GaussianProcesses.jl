@@ -18,6 +18,7 @@ gp = GP(x,y,mZero,kern,-1.0)      #Fit the GP, where -1.0 is the log Gaussian no
 #Estimate the parameters using MCMC
 
 #The default implementation uses the random-walk Metropolis algorithm and details can be found in the mcmc function documentation. Note that the parameters of the MCMC algorithm are automatically tuned.
+
 MCMCout1 = mcmc(gp)
 
 #The user can specify a different sampler from the Lora package as well as different starting values, number of iterations, length of burnin, etc.
