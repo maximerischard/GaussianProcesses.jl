@@ -12,20 +12,13 @@ For an extensive review of Gaussian Processes there is an excellent book [Gaussi
 
 ## Installation
 
-GaussianProcesses requires Julia version 0.3 or above. To install GaussianProcesses run the following command inside a Julia session:
+GaussianProcesses requires Julia version 0.4 or above. To install GaussianProcesses run the following command inside a Julia session:
 
 ```julia
 julia> Pkg.add("GaussianProcesses")
 ```
 
 ## Documentation
-
-Most of the functionality of GaussianProcesses has been documented using the [Docile](https://github.com/MichaelHatherly/Docile.jl) package. From Julia version 0.4 this functionality will form part of the Julia base. To view the documentation the user must install the [Lexicon](https://github.com/MichaelHatherly/Lexicon.jl) package and load it.
-
-```julia
-julia> Pkg.add("Lexicon")
-julia> using Lexicon
-```
 
 Documentation is accessible in the Julia REPL in help mode. Help mode can be started by typing '?' at the prompt.
 
@@ -41,14 +34,14 @@ GaussianProcesses.GP
                                  -–––––––––––-
 
   Fits a Gaussian process to a set of training points. The Gaussian process is
-  defined in terms of its mean and covaiance (kernel) functions, which are
+  defined in terms of its mean and covariance (kernel) functions, which are
   user defined. As a default it is assumed that the observations are noise
   free.
 
                                    Arguments:
                                   -––––––––––-
 
-    • `x::Matrix{Float64}`: Training inputs
+    • `X::Matrix{Float64}`: Training inputs
     • `y::Vector{Float64}`: Observations
     • `m::Mean`           : Mean function
     • `k::kernel`         : Covariance function
@@ -62,7 +55,7 @@ GaussianProcesses.GP
 
  Details:
 
-	source: (16,"/home/jamie/.julia/v0.3/GaussianProcesses/src/GP.jl")
+	source: (16,"/home/jamie/.julia/v0.4/GaussianProcesses/src/GP.jl")
 ```
 
 
@@ -113,7 +106,7 @@ plot(gp)
 ```
 ![1-D Gaussian Process](/docs/regression_1d.png "1-D Gaussian Process pre-optimization")
 
-The hyperparameters are optimized using the [Optim](https://github.com/JuliaOpt/Optim.jl) package. This offers users a range of optimization algorithms which can be applied to estimate the hyperparameters using type II maximum likelihood estimation. Gradients are available for all mean and kernel functions used in the package and therefore it is recommended that the user utilizes gradient based optimization techniques. As a default, the `optimize!` function uses the `bfgs` solver, however, alternative solvers can be applied (see 2D example below). 
+The hyperparameters are optimized using the [Optim](https://github.com/JuliaOpt/Optim.jl) package. This offers users a range of optimization algorithms which can be applied to estimate the hyperparameters using type II maximum likelihood estimation. Gradients are available for all mean and kernel functions used in the package and therefore it is recommended that the user utilizes gradient based optimization techniques. As a default, the `optimize!` function uses the `Conjugate Gradients` solver, however, alternative solvers can be applied. 
 ```julia
 optimize!(gp)   #Optimise the hyperparameters
 plot(gp)       #Plot the GP after the hyperparameters have been optimised 
@@ -153,7 +146,7 @@ gp = GP(x,y,mZero,kern,logObsNoise)   # Fit the GP
 Using the [Optim](https://github.com/JuliaOpt/Optim.jl) package we have the option to choose from a range of optimize functions including conjugate gradients. It is also possible to fix the hyperparameters in either the mean, kernel or observation noise, by settting them to false in `optimize!` (e.g. `optimize!(...,mean=false)`).
 
 ```julia
-optimize!(gp,method=:cg)                   # Optimize the hyperparameters
+optimize!(gp; method=Optim.ConjugateGradient())                   # Optimize the hyperparameters
 
 Results of Optimization Algorithm
  * Algorithm: Conjugate Gradient
@@ -175,6 +168,39 @@ plot(gp; clim=(-10.0, 10.0,-10.0,10.0)) # Plot the GP over range clim
 ```
 
 ![2-D Gaussian Process](/docs/regression_2d.png?raw=true "2-D Gaussian Process")
+
+## Sampling from the GP
+
+After specifying a mean and covariance function it's straightforward to sample from the GP prior using the `rand` function.
+
+```
+# Select mean and covariance function
+mZero = MeanZero()
+kern = SE(0.0,0.0)
+
+# Specify the GP prior
+gp = GP(m=mZero,k=kern)     
+
+x_path = collect(linspace(-5,5)) #Range to sample over
+
+prior=rand(gp,x_path, 10)  
+```
+
+![Gaussian Process Prior](/docs/prior_samples.png?raw=true "Gaussian Process Prior")
+
+
+Once we have some data we can then update the GP to give the posterior distribution, and again using the `rand` function, we can sample from the GP.
+
+```
+# Training data
+x=[-4.0,-3.0,-1.0,0.0,2.0];
+y=[-2.0,0.0,1.0,2.0,-1.0];
+
+# Fit data to GP object
+GaussianProcesses.fit!(gp, x, y)
+post=rand(gp,x_path, 10)
+```
+![Gaussian Process Prior](/docs/posterior_samples.png?raw=true "Gaussian Process Posterior")
 
 ## ScikitLearn
 

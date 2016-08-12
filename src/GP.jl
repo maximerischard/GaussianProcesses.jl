@@ -15,7 +15,7 @@ Fits a Gaussian process to a set of training points. The Gaussian process is def
 * `y::Vector{Float64}`: Output observations
 * `m::Mean`           : Mean function
 * `k::kernel`         : Covariance function
-* `logNoise::Float64` : Log of the observation noise. The default is -1e8, which is equivalent to assuming no observation noise.
+* `logNoise::Float64` : Log of the standard deviation for the observation noise. The default is -1e8, which is equivalent to assuming no observation noise.
 
 # Returns:
 * `gp::GP`            : Gaussian process object, fitted to the training data if provided
@@ -23,7 +23,7 @@ Fits a Gaussian process to a set of training points. The Gaussian process is def
 type GP
     m:: Mean                # Mean object
     k::Kernel               # Kernel object
-    logNoise::Float64       # log variance of observation noise
+    logNoise::Float64       # log standard deviation of observation noise
     
     # Observation data
     nobsv::Int              # Number of observations
@@ -33,8 +33,8 @@ type GP
     dim::Int                # Dimension of inputs
     
     # Auxiliary data
-    cK::AbstractPDMat       # (k + obsNoise)
-    alpha::Vector{Float64}  # (k + obsNoise)⁻¹y
+    cK::AbstractPDMat       # (k + exp(2*obsNoise))
+    alpha::Vector{Float64}  # (k + exp(2*obsNoise))⁻¹y
     mLL::Float64            # Marginal log-likelihood
     dmLL::Vector{Float64}   # Gradient marginal log-likelihood
     
@@ -97,7 +97,6 @@ function update_mll_and_dmll!(gp::GP; noise::Bool=true, mean::Bool=true, kern::B
 
     #Derivative wrt the observation noise
     if noise
-        #gp.dmLL[1] = exp(2*gp.logNoise)*trace((gp.alpha*gp.alpha' - gp.L'\(gp.L\eye(gp.nobsv))))
         gp.dmLL[1] = exp(2*gp.logNoise)*trace((gp.alpha*gp.alpha' - gp.cK \ eye(gp.nobsv)))
     end
 
@@ -105,7 +104,7 @@ function update_mll_and_dmll!(gp::GP; noise::Bool=true, mean::Bool=true, kern::B
     if mean
         Mgrads = grad_stack(gp.m, gp.X)
         for i in 1:num_params(gp.m)
-            gp.dmLL[i+noise] = -dot(Mgrads[:,i],gp.alpha)
+            gp.dmLL[i+noise] = dot(Mgrads[:,i],gp.alpha)
         end
     end
 
@@ -223,11 +222,15 @@ function show(io::IO, gp::GP)
     show(io, gp.m, 2)
     println(io, "  Kernel:")
     show(io, gp.k, 2)
-    println(io, "  Input observations = ")
-    show(io, gp.X)
-    print(io,"\n  Output observations = ")
-    show(io, gp.y)
-    print(io,"\n  Variance of observation noise = $(exp(gp.logNoise))")
-    print(io,"\n  Marginal Log-Likelihood = ")
-    show(io, round(gp.mLL,3))
+    if (gp.nobsv == 0)
+        println("  No observation data")
+    else
+        println(io, "  Input observations = ")
+        show(io, gp.X)
+        print(io,"\n  Output observations = ")
+        show(io, gp.y)
+        print(io,"\n  Variance of observation noise = $(exp(2*gp.logNoise))")
+        print(io,"\n  Marginal Log-Likelihood = ")
+        show(io, round(gp.mLL,3))
+    end
 end
