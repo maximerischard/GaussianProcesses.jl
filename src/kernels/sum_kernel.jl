@@ -80,7 +80,7 @@ function set_params!(sumkern::SumKernel, hyp::Vector{Float64})
         np = num_params(k)
         set_params!(k, hyp[i:(i+np-1)])
         i += np
-   p end
+    end
 end
 
 function grad_kern(sumkern::SumKernel, x::Vector{Float64}, y::Vector{Float64})
