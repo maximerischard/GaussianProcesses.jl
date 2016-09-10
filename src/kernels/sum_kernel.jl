@@ -11,21 +11,21 @@ type SumKernel <: Kernel
 end
 
 type SumData <: KernelData
-	datadict::Dict{Symbol, KernelData}
-	keys::Vector{Symbol}
+    datadict::Dict{Symbol, KernelData}
+    keys::Vector{Symbol}
 end
 
 function KernelData(sumkern::SumKernel, X::Matrix{Float64})
-	datadict = Dict{Symbol, KernelData}()
-	datakeys = Symbol[]
-	for k in sumkern.kerns
-		data_type = kernel_data_key(k, X)
-		if !haskey(datadict, data_type)
-			datadict[data_type] = KernelData(k, X)
+    datadict = Dict{Symbol, KernelData}()
+    datakeys = Symbol[]
+    for k in sumkern.kerns
+        data_type = kernel_data_key(k, X)
+        if !haskey(datadict, data_type)
+            datadict[data_type] = KernelData(k, X)
         end
         push!(datakeys, data_type)
-	end
-	SumData(datadict, datakeys)
+    end
+    SumData(datadict, datakeys)
 end
 kernel_data_key(sumkern::SumKernel, X::Matrix{Float64}) = :SumData
 
@@ -46,7 +46,7 @@ function cov(sumkern::SumKernel, x::Vector{Float64}, y::Vector{Float64})
 end
 
 function cov!(s::Matrix{Float64}, sumkern::SumKernel, X::Matrix{Float64}, data::SumData)
-	s[:,:] = 0.0
+    s[:,:] = 0.0
     for (ikern,kern) in enumerate(sumkern.kerns)
         addcov!(s, kern, X, data.datadict[data.keys[ikern]])
     end
@@ -125,24 +125,6 @@ function grad_slice!(dK::AbstractMatrix, sumkern::SumKernel, X::Matrix{Float64},
     end
     return dK
 end
-#=function dKdθi!(Kgrad::AbstractMatrix, sumkern::SumKernel, X::Matrix{Float64}, data::SumData, iparam::Int)=#
-#=    s = 0=#
-#=    for k in sumkern.kerns=#
-#=        np = num_params(k)=#
-#=        if iparam<=np+s=#
-#=            dKdθi!(Kgrad, k, X, data.datadict[data.keys[ikern]], iparam-s)=#
-#=            return Kgrad=#
-#=        end=#
-#=        s += np=#
-#=    end=#
-#=    return Kgrad=#
-#=end=#
-#=function grad_stack!(stack::AbstractArray, k::SumKernel, X::Matrix{Float64}, data::KernelData)=#
-#=    for iparam in 1:num_params(k)=#
-#=        dKdθi!(Base.view(stack,:,:,iparam), k, X, data, iparam)=#
-#=    end=#
-#=    return stack=#
-#=end=#
         
 # Addition operators
 function +(k1::SumKernel, k2::Kernel)
